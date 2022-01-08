@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - './backend:/app'
+    environment:
+      APP_HOST: '0.0.0.0'
+      APP_PORT: '8080'
+    ports:
+      - '8080:8080'
+  frontend:
+    build: ./frontend
+    volumes:
+      - './frontend:/app'
+      - 'node_modules:/app/node_modules'
+    environment:
+      APP_HOST: '0.0.0.0'
+      APP_PORT: '4000'
+      VITE_WS_PORT: '8080'
+    ports:
+      - '4000:4000'
+volumes:
+  node_modules: 
