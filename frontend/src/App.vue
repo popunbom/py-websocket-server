@@ -2,49 +2,48 @@
 <h1>websocket-client</h1>
 <hr>
 <div class="send-message">
-  <input type="text" v-model="inputText" @keydown.enter="handleClickSend">
-  <button @click="handleClickSend">send</button>
+  <input type="text" v-model="inputText" @keydown.enter="handleSendText">
+  <button @click="handleSendText">send</button>
 </div>
+<hr>
+<AudioRecorder @ready-audio="handleReadyAudio"/>
 <hr>
 <div class="messages">
   <div class="message" v-for="(message, i) in messages" :key="i">
-    {{timestampToString(message.timestamp)}} : {{message.body}}
+    {{ message.timestampToString() }} : {{ message.text() }}
   </div>
 </div>
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
 import { Message, isMessage } from "./entities/Message";
+import AudioRecorder from "./components/AudioRecorder.vue";
 
 const messages = ref<Message[]>([])
-
 const inputText = ref<string>("")
 
-const timestampToString = (timestamp: string): string => {
-  const d = (new Date(Date.parse(timestamp)))
-  d.setHours(d.getHours())
-  return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
-}
-
+// WebSocket コネクションの作成
 const ws = new WebSocket(`ws://localhost:${import.meta.env.VITE_WS_PORT}/ws`)
 ws.addEventListener("open", () => console.log("WebSocket: connect open"))
 ws.addEventListener("message", (e) => {
   const message = JSON.parse(e.data)
   if (isMessage(message)) {
-    messages.value.push(message)
+    messages.value.push(new Message(message.body, message.timestamp))
   } else {
     console.error("invalid message type")
     console.error(message)
   }
 })
 
-const handleClickSend = () => ws.send(
-  JSON.stringify({
-    body: inputText.value,
-    timestamp: (new Date()).toISOString(),
-  })
+// テキストベースでメッセージ送信
+const handleSendText = () => ws.send(
+  JSON.stringify(Message.fromPlainText(inputText.value))
 )
 
+// 音声ベースでメッセージ送信
+const handleReadyAudio = (dataUrl: string) => ws.send(
+  JSON.stringify(Message.fromVoiceDataURL(dataUrl))
+)
 
 </script>
 

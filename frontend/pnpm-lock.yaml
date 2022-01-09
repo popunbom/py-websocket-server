@@ -2,17 +2,21 @@ lockfileVersion: 5.3
 
 specifiers:
   '@types/node': ^17.0.8
+  '@types/recordrtc': ^5.6.8
   '@vitejs/plugin-vue': ^2.0.0
+  recordrtc: ^5.6.2
   typescript: ^4.4.4
   vite: ^2.7.2
   vue: ^3.2.25
   vue-tsc: ^0.29.8
 
 dependencies:
+  recordrtc: 5.6.2
   vue: 3.2.26
 
 devDependencies:
   '@types/node': 17.0.8
+  '@types/recordrtc': 5.6.8
   '@vitejs/plugin-vue': 2.0.1_vite@2.7.10+vue@3.2.26
   typescript: 4.5.4
   vite: 2.7.10
@@ -56,6 +60,10 @@ packages:
 
   /@types/node/17.0.8:
     resolution: {integrity: sha512-YofkM6fGv4gDJq78g4j0mMuGMkZVxZDgtU0JRdx6FgiJDG+0fY0GKVolOV8WqVmEhLCXkQRjwDdKyPxJp/uucg==}
+    dev: true
+
+  /@types/recordrtc/5.6.8:
+    resolution: {integrity: sha512-UJQOyTnRXihyKPdUMBur/VxrnXWRCl2AlazwR76mZUc+gnFVfl/MRm5Kz/UtKT7F2l9m4OGwNRyHvy/z765E1w==}
     dev: true
 
   /@vitejs/plugin-vue/2.0.1_vite@2.7.10+vue@3.2.26:
@@ -689,6 +697,10 @@ packages:
       pug-runtime: 3.0.1
       pug-strip-comments: 2.0.0
     dev: true
+
+  /recordrtc/5.6.2:
+    resolution: {integrity: sha512-1QNKKNtl7+KcwD1lyOgP3ZlbiJ1d0HtXnypUy7yq49xEERxk31PHvE9RCciDrulPCY7WJ+oz0R9hpNxgsIurGQ==}
+    dev: false
 
   /request-light/0.5.7:
     resolution: {integrity: sha512-i/wKzvcx7Er8tZnvqSxWuNO5ZGggu2UgZAqj/RyZ0si7lBTXL7kZiI/dWxzxnQjaY7s5HEy1qK21Do4Ncr6cVw==}
