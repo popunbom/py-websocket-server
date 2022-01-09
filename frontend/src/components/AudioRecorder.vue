@@ -1,20 +1,23 @@
 <template>
   <h3>audio-recorder</h3>
   <div class="toolbar">
-    <button @click="handleClick">
-      {{ (isRecording) ? "stop" : "start" }}
-    </button>
-    <span class="status">{{ recordingState }}</span>
+    <span>
+      Status: 
+      <span v-bind:class="{status: true, speaking: isSpeaking}">
+        {{ isSpeaking ? "SPEAKING" : "SILENT" }}
+      </span>
+    </span>
   </div>
 </template>
 <script setup lang="ts">
-import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 import { computed, ref } from "vue";
 
-let recorder: RecordRTC
+import hark from "hark";
+import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 
-const TIME_SLICE_MS = 5000 // 5 sec
 
+const TIME_SLICE_MS = 100 // 100 ms
+const PRESERVED_BUFFER = 5
 const blobToDataURL = (blob: Blob): Promise<string> => {
   return new Promise<string>(
     (resolve, reject) => {
@@ -27,11 +30,15 @@ const blobToDataURL = (blob: Blob): Promise<string> => {
   )
 }
 
+let recorder: RecordRTC
+let speechEvent: hark.Harker
+
+let recordingData: Blob[] = []
+
 const emit = defineEmits<{
   (e: "readyAudio", dataUrl: string): void,
 }>()
-
-const recordingState = ref<string>("undefined")
+const isSpeaking = ref<boolean>(false)
 
 // MediaDevice を取得
 navigator.mediaDevices.getUserMedia({video: false, audio: true})
@@ -47,30 +54,55 @@ navigator.mediaDevices.getUserMedia({video: false, audio: true})
         numberOfAudioChannels: 1, // mono
         timeSlice: TIME_SLICE_MS,
         // event handlers
-        ondataavailable: (blob) => 
-          blobToDataURL(blob)
-          .then((dataUrl: string) => emit("readyAudio", dataUrl))
+        ondataavailable: (blob) => {
+          if (!isSpeaking.value && recordingData.length >= PRESERVED_BUFFER) {
+            recordingData.splice(0)
+          }
+          recordingData.push(blob)
+          console.log(`recordingData(length=${recordingData.length})`)
+        }
       }
     )
+    
+    speechEvent = hark(stream, {
+      interval: 10, // 10 ms
+      threshold: -60, // -60 dB
+    })
+    speechEvent.on("speaking", () => {
+      console.log("speechEvent: speaking")
+      isSpeaking.value = true
+    })
+    speechEvent.on("stopped_speaking", () => {
+      console.log("speechEvent: stopped_speaking")
+      isSpeaking.value = false
+      blobToDataURL(
+        recordingData.reduce(
+          (concat, blob) => concat = new Blob([concat, blob]),
+          new Blob()
+        )
+      ).then(
+        (dataUrl: string) => emit("readyAudio", dataUrl)
+      )
+    })
+
+    recorder.startRecording()
   })
   .catch(e => console.error(e))
-
-const isRecording = computed<boolean>(() => recordingState.value === "recording")
-const handleClick = () => {
-  if (isRecording.value) {
-    recorder.stopRecording()
-  } else {
-    if (recordingState.value !== "undefined") {
-      recorder.destroy()
-    }
-    recorder.startRecording()
-  }
-  recordingState.value = recorder.getState()
-}
 
 </script>
 <style scoped>
 .toolbar > * {
   margin: 4px;
+}
+.status {
+  padding: 4px 8px;
+  
+  background-color: blue;
+  color: white;
+}
+.status.speaking {
+  background-color: crimson;
+  color: white;
+  font-weight: bold;
 }
 </style>

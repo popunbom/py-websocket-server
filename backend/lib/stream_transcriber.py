@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 from enum import Enum
 from typing import Iterable
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from google.cloud import speech
 from google.protobuf import json_format
 from google.oauth2.service_account import Credentials
+from google.api_core.grpc_helpers import _StreamingResponseIterator
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -70,23 +72,33 @@ class StreamTranscriber:
             解析結果
         """
 
-        responses: Iterable[speech.StreamingRecognizeResponse] = self.client.streaming_recognize(
+        logger.info("[Speech-to-Text] stream data: {}, {:,} bytes".format(
+            stream[:6],
+            len(stream) / 1000)
+        )
+        responses: _StreamingResponseIterator = self.client.streaming_recognize(
             config=speech.StreamingRecognitionConfig(config=self.config),
             requests=[speech.StreamingRecognizeRequest(
                 audio_content=stream
             )]
         )
 
-        logger.info("[Speech-to-Text] responses: {}".format(
-            json_format.MessageToJson(responses)
-        ))
         transcribe_result = TranscribeResult(text="")
         for response in responses:
+            response: speech.StreamingRecognizeResponse = response
+            logger.info("[Speech-to-Text] response: {}".format(
+                json.dumps(
+                    speech.StreamingRecognizeResponse.to_dict(response),
+                    ensure_ascii=False,
+                    indent=2
+                )
+            ))
             for result in response.results:
                 result: speech.StreamingRecognitionResult = result
                 # 最も確度が高い結果のみを採用する
                 alternative: speech.SpeechRecognitionAlternative = result.alternatives[0]
-                logger.info("transcript: {}".format(alternative.transcript))
                 transcribe_result.text += alternative.transcript
+        else:
+            logger.info("[Speech-to-Text] no response returned")
 
         return transcribe_result
